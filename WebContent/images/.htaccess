@@ -1,8 +1,0 @@
-# The following tells Apache to send a unique hash to
-# the browser in the image file headers
-# This hash only ever changes when the image file is
-# modified and this change triggers the browser to reload
-# the image the next time it is requested
-<FilesMatch "\.(jpg|jpeg|png|gif)$">
-FileETag MTime Size
-</FilesMatch>
