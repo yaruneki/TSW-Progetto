@@ -27,8 +27,7 @@ public class StampaFattura extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        final String PATH = req.getServletContext().getInitParameter("WHITEE_ROOT") + File.separator + "pdf" +
-                File.separator;
+        final String PATH = req.getServletContext().getRealPath("/pdf/");
 
         PDDocument document = PDDocument.load(new File(PATH + fileName));
         UtenteBean utenteBean = (UtenteBean) req.getSession().getAttribute("utente");

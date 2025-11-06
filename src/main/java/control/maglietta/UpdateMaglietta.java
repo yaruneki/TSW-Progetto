@@ -22,8 +22,7 @@ import java.sql.SQLException;
 public class UpdateMaglietta extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        final String PATH = req.getServletContext().getInitParameter("WHITEE_ROOT") + File.separator + "images" +
-                File.separator + "grafiche" + File.separator;
+        final String PATH = req.getServletContext().getRealPath("/images/grafiche/");
         int ID = Integer.parseInt(req.getParameter("id"));
         String nome  = req.getParameter("nome");
         float prezzo = Float.parseFloat(req.getParameter("prezzo"));

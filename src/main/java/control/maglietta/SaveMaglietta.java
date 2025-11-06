@@ -21,8 +21,7 @@ public class SaveMaglietta extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        final String PATH = req.getServletContext().getInitParameter("WHITEE_ROOT") + File.separator + "images" +
-                File.separator + "grafiche" + File.separator;
+        final String PATH = req.getServletContext().getRealPath("/images/grafiche/");
         String nome  = req.getParameter("nome");
         String colore = req.getParameter("colore");
         String tipo = req.getParameter("tipo");

@@ -18,8 +18,8 @@ import java.sql.SQLException;
 public class DeleteMaglietta extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        final String PATH =  req.getServletContext().getInitParameter("WHITEE_ROOT") + File.separator + "images" +
-                File.separator + "grafiche" + File.separator;
+        final String PATH = req.getServletContext().getRealPath("/images/grafiche/");
+
 
         int ID = Integer.parseInt(req.getParameter("ID"));
         String tipo = req.getParameter("tipo");

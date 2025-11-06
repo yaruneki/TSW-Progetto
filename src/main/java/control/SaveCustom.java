@@ -19,8 +19,7 @@ import java.sql.SQLException;
 public class SaveCustom extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        final String PATH = req.getServletContext().getInitParameter("WHITEE_ROOT") + File.separator + "images" +
-                File.separator + "grafiche" + File.separator;
+        final String PATH = req.getServletContext().getRealPath("/images/grafiche/");
 
         String imgData = req.getParameter("imgData");
 
