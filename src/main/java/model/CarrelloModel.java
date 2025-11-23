@@ -11,6 +11,7 @@ import java.util.List;
 
 public class CarrelloModel {
     private ArrayList<MagliettaOrdine> carrello;
+    private MagliettaDAO magliettaDAO = new MagliettaDAO();
 
     public CarrelloModel() {
         carrello = new ArrayList<>();
@@ -32,8 +33,6 @@ public class CarrelloModel {
                 return;
             }
         }
-
-        MagliettaDAO magliettaDAO = new MagliettaDAO();
 
         try {
             MagliettaBean magliettaBean = magliettaDAO.doRetrieveByKey(ID);
@@ -58,5 +57,13 @@ public class CarrelloModel {
     public synchronized void rimuovi(int ID, String taglia) {
         carrello.removeIf(m -> m.getMagliettaBean().getID() == ID &&
                 m.getTaglia().equals(taglia));
+    }
+
+    public void setCarrello(ArrayList<MagliettaOrdine> carrello) {
+        this.carrello = carrello;
+    }
+
+    public void setMagliettaDAO(MagliettaDAO magliettaDAO) {
+        this.magliettaDAO = magliettaDAO;
     }
 }
