@@ -2,180 +2,188 @@ package model.utente;
 
 import model.DAOInterface;
 import model.DBConnection;
+import model.security.CryptoKeyProvider;
+import model.security.CryptoUtils;
+import org.mindrot.jbcrypt.BCrypt;
 
+import javax.crypto.SecretKey;
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-
-import java.sql.Date;
+import java.sql.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class UtenteDAO implements DAOInterface<UtenteBean, String> {
+
     private static final String TABLE_NAME = "Utente";
     private static final DataSource ds = DBConnection.getDataSource();
-    
+    private static final SecretKey KEY = CryptoKeyProvider.getKey();
+
     @Override
     public UtenteBean doRetrieveByKey(String code) throws SQLException {
-        UtenteBean utenteBean = new UtenteBean();
-
+        UtenteBean user = new UtenteBean();
         String query = "SELECT * FROM " + TABLE_NAME + " WHERE username = ?";
-
-        return getUtenteBean(code, utenteBean, query);
+        return getUtenteBean(code, user, query);
     }
 
     @Override
     public Collection<UtenteBean> doRetriveAll(String order) throws SQLException {
-        Collection<UtenteBean> utenti = new ArrayList<>();
+        Collection<UtenteBean> users = new ArrayList<>();
+        String query = "SELECT * FROM " + TABLE_NAME;
 
-        String query = "SELECT * FROM" + TABLE_NAME;
+        try (Connection connection = ds.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
-        try (Connection connection=ds.getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             ResultSet resultSet = preparedStatement.executeQuery();
-
             while (resultSet.next()) {
-                UtenteBean utenteBean = new UtenteBean();
-                setUtente(resultSet, utenteBean);
-                utenti.add(utenteBean);
+                UtenteBean user = new UtenteBean();
+                setUtente(resultSet, user);
+                users.add(user);
             }
         }
 
-        return utenti;
+        return users;
     }
 
     public UtenteBean doRetrieveByEmail(String email) throws SQLException {
-        UtenteBean utenteBean = new UtenteBean();
-
+        UtenteBean user = new UtenteBean();
         String query = "SELECT * FROM " + TABLE_NAME + " WHERE email = ?";
-
-        return getUtenteBean(email, utenteBean, query);
+        return getUtenteBean(email, user, query);
     }
 
-
     @Override
-    public synchronized void doSave(UtenteBean utente) throws SQLException {
-        String query = "INSERT INTO " + TABLE_NAME + " (username, pwd, nome, cognome, email, dataNascita, nomeCarta, cognomeCarta, numCarta, dataScadenza, CVV, cap, via, citta, tipo) " +
+    public synchronized void doSave(UtenteBean u) throws SQLException {
+        String query = "INSERT INTO " + TABLE_NAME +
+                " (username, pwd, nome, cognome, email, dataNascita, nomeCarta, cognomeCarta, numCarta, dataScadenza, CVV, cap, via, citta, tipo) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection = ds.getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-            setUtenteStatement(utente, preparedStatement);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(query)) {
+
+            ps.setString(1, u.getUsername());
+            ps.setString(2, BCrypt.hashpw(u.getPwd(), BCrypt.gensalt()));
+            ps.setString(3, u.getNome());
+            ps.setString(4, u.getCognome());
+            ps.setString(5, u.getEmail());
+            ps.setDate(6, Date.valueOf(u.getDataNascita()));
+
+            try {
+                ps.setString(7, encryptOrNull(KEY, u.getNomeCarta()));
+                ps.setString(8, encryptOrNull(KEY, u.getCognomeCarta()));
+                ps.setString(9, encryptOrNull(KEY, u.getNumCarta()));
+                ps.setString(10, encryptOrNull(KEY, u.getDataScadenza() == null ? null : u.getDataScadenza().toString()));
+                ps.setString(11, encryptOrNull(KEY, u.getCVV()));
+            } catch (Exception e) {
+                throw new SQLException("Encryption error", e);
+            }
+
+            ps.setString(12, u.getCap());
+            ps.setString(13, u.getVia());
+            ps.setString(14, u.getCitta());
+            ps.setString(15, u.getTipo());
+
+            ps.executeUpdate();
         }
     }
 
-    @SuppressWarnings("all")
     @Override
-    public synchronized void doUpdate(UtenteBean utente) throws SQLException {
-        String query =  "UPDATE " + TABLE_NAME +
-                        " SET pwd = ?, nome = ?, cognome = ?,"+
-                        " email = ?, dataNascita = ?, numCarta = ?," +
-                        " dataScadenza = ?, CVV = ?, nomeCarta = ?, cognomeCarta = ?, cap = ?, via = ?," +
-                        " citta = ?, tipo = ?" +
-                        " WHERE username = ?";
+    public synchronized void doUpdate(UtenteBean u) throws SQLException {
+        String query = "UPDATE " + TABLE_NAME +
+                " SET pwd = ?, nome = ?, cognome = ?, email = ?, dataNascita = ?, " +
+                "numCarta = ?, dataScadenza = ?, CVV = ?, nomeCarta = ?, cognomeCarta = ?, " +
+                "cap = ?, via = ?, citta = ?, tipo = ? WHERE username = ?";
 
-        try (Connection connection = ds.getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-           preparedStatement.setString(1, utente.getPwd());
-           preparedStatement.setString(2, utente.getNome());
-           preparedStatement.setString(3, utente.getCognome());
-           preparedStatement.setString(4, utente.getEmail());
-           preparedStatement.setDate(5, Date.valueOf(utente.getDataNascita()));
-           preparedStatement.setString(6, utente.getNumCarta());
-           if(utente.getDataScadenza() == null){
-               preparedStatement.setDate(7, null);
-           }
-           else{
-               preparedStatement.setDate(7, Date.valueOf(utente.getDataScadenza()));
-           }
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(query)) {
 
-           preparedStatement.setString(8, utente.getCVV());
-           preparedStatement.setString(9, utente.getNomeCarta());
-           preparedStatement.setString(10, utente.getCognomeCarta());
-           preparedStatement.setString(11, utente.getCap());
-           preparedStatement.setString(12, utente.getVia());
-           preparedStatement.setString(13, utente.getCitta());
-           preparedStatement.setString(14, utente.getTipo());
+            ps.setString(1, BCrypt.hashpw(u.getPwd(), BCrypt.gensalt()));
+            ps.setString(2, u.getNome());
+            ps.setString(3, u.getCognome());
+            ps.setString(4, u.getEmail());
+            ps.setDate(5, Date.valueOf(u.getDataNascita()));
 
-           preparedStatement.setString(15, utente.getUsername());
+            try {
+                ps.setString(6, encryptOrNull(KEY, u.getNumCarta()));
+                ps.setString(7, encryptOrNull(KEY, u.getDataScadenza() == null ? null : u.getDataScadenza().toString()));
+                ps.setString(8, encryptOrNull(KEY, u.getCVV()));
+                ps.setString(9, encryptOrNull(KEY, u.getNomeCarta()));
+                ps.setString(10, encryptOrNull(KEY, u.getCognomeCarta()));
+            } catch (Exception e) {
+                throw new SQLException("Encryption error", e);
+            }
 
-           preparedStatement.executeUpdate();
+            ps.setString(11, u.getCap());
+            ps.setString(12, u.getVia());
+            ps.setString(13, u.getCitta());
+            ps.setString(14, u.getTipo());
+            ps.setString(15, u.getUsername());
 
+            ps.executeUpdate();
         }
     }
 
     @Override
     public boolean doDelete(String code) throws SQLException {
-        int result;
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement("DELETE FROM " + TABLE_NAME + " WHERE username = ?")) {
 
-        String query = "DELETE FROM " + TABLE_NAME + " WHERE username = ?";
-
-        try (Connection connection = ds.getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-            preparedStatement.setString(1, code);
-
-            result = preparedStatement.executeUpdate();
+            ps.setString(1, code);
+            return ps.executeUpdate() != 0;
         }
-
-        return result != 0;
     }
 
-    private UtenteBean getUtenteBean(String code, UtenteBean utenteBean, String query) throws SQLException {
-        try (Connection connection = ds.getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-            preparedStatement.setString(1, code);
+    private UtenteBean getUtenteBean(String code, UtenteBean user, String query) throws SQLException {
+        try (Connection c = ds.getConnection();
+             PreparedStatement ps = c.prepareStatement(query)) {
 
-            ResultSet resultSet = preparedStatement.executeQuery();
+            ps.setString(1, code);
+            ResultSet rs = ps.executeQuery();
 
-            if (!resultSet.isBeforeFirst())
+            if (!rs.isBeforeFirst())
                 return null;
 
-            resultSet.next();
-
-            setUtente(resultSet, utenteBean);
+            rs.next();
+            setUtente(rs, user);
         }
 
-        return utenteBean;
+        return user;
     }
 
-    private void setUtente(ResultSet resultSet, UtenteBean utenteBean) throws SQLException {
-        utenteBean.setUsername(resultSet.getString("username"));
-        utenteBean.setPwd(resultSet.getString("pwd"));
-        utenteBean.setNome(resultSet.getString("nome"));
-        utenteBean.setCognome(resultSet.getString("cognome"));
-        utenteBean.setEmail(resultSet.getString("email"));
-        utenteBean.setDataNascita((resultSet.getDate("dataNascita").toLocalDate()));
-        utenteBean.setNomeCarta((resultSet.getString("nomeCarta")));
-        utenteBean.setCognomeCarta((resultSet.getString("cognomeCarta")));
-        utenteBean.setNumCarta(resultSet.getString("numCarta"));
-        if (resultSet.getDate("dataScadenza") == null)
-            utenteBean.setDataScadenza(null);
-        else
-            utenteBean.setDataScadenza((resultSet.getDate("dataScadenza").toLocalDate()));
-        utenteBean.setCVV((resultSet.getString("CVV")));
-        utenteBean.setCap(resultSet.getString("cap"));
-        utenteBean.setVia(resultSet.getString("via"));
-        utenteBean.setCitta(resultSet.getString("citta"));
-        utenteBean.setTipo(resultSet.getString("tipo"));
+    private void setUtente(ResultSet rs, UtenteBean u) throws SQLException {
+        u.setUsername(rs.getString("username"));
+        u.setPwd(rs.getString("pwd"));
+        u.setNome(rs.getString("nome"));
+        u.setCognome(rs.getString("cognome"));
+        u.setEmail(rs.getString("email"));
+
+        Date birth = rs.getDate("dataNascita");
+        if (birth != null) u.setDataNascita(birth.toLocalDate());
+
+        try {
+            u.setNomeCarta(decryptOrNull(KEY, rs.getString("nomeCarta")));
+            u.setCognomeCarta(decryptOrNull(KEY, rs.getString("cognomeCarta")));
+            u.setNumCarta(decryptOrNull(KEY, rs.getString("numCarta")));
+            u.setCVV(decryptOrNull(KEY, rs.getString("CVV")));
+
+            String exp = rs.getString("dataScadenza");
+            u.setDataScadenza(exp == null ? null : LocalDate.parse(decryptOrNull(KEY, exp)));
+
+        } catch (Exception e) {
+            throw new SQLException("Decryption error", e);
+        }
+
+        u.setCap(rs.getString("cap"));
+        u.setVia(rs.getString("via"));
+        u.setCitta(rs.getString("citta"));
+        u.setTipo(rs.getString("tipo"));
     }
 
-    private void setUtenteStatement(UtenteBean utenteBean, PreparedStatement preparedStatement) throws SQLException {
-        preparedStatement.setString(1, utenteBean.getUsername());
-        preparedStatement.setString(2, utenteBean.getPwd());
-        preparedStatement.setString(3, utenteBean.getNome());
-        preparedStatement.setString(4, utenteBean.getCognome());
-        preparedStatement.setString(5, utenteBean.getEmail());
-        preparedStatement.setDate(6, Date.valueOf(utenteBean.getDataNascita()));
-        preparedStatement.setString(7, utenteBean.getNomeCarta());
-        preparedStatement.setString(8, utenteBean.getCognomeCarta());
-        preparedStatement.setString(9, utenteBean.getNumCarta());
-        if(utenteBean.getDataScadenza() == null)
-            preparedStatement.setDate(10, null);
-        else
-            preparedStatement.setDate(10, Date.valueOf(utenteBean.getDataScadenza()));
-        preparedStatement.setString(11, utenteBean.getCVV());
-        preparedStatement.setString(12, utenteBean.getCap());
-        preparedStatement.setString(13, utenteBean.getVia());
-        preparedStatement.setString(14, utenteBean.getCitta());
-        preparedStatement.setString(15, utenteBean.getTipo());
+    private String encryptOrNull(SecretKey key, String v) throws Exception {
+        return (v == null || v.isEmpty()) ? null : CryptoUtils.encrypt(key, v);
+    }
+
+    private String decryptOrNull(SecretKey key, String v) throws Exception {
+        return (v == null) ? null : CryptoUtils.decrypt(key, v);
     }
 }
+
