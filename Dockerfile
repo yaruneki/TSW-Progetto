@@ -16,7 +16,7 @@ FROM tomcat:9.0.83-jdk11
 RUN rm -rf /usr/local/tomcat/webapps/*
 
 # Copy the generated WAR file from the build stage
-COPY --from=build /app/target/TSW-Progetto.war /usr/local/tomcat/webapps/ROOT.war
+COPY --from=build /app/target/SD-Progetto.war /usr/local/tomcat/webapps/ROOT.war
 
 # Copy context.xml to configure JNDI DataSource
 COPY src/main/webapp/META-INF/context.xml /usr/local/tomcat/conf/context.xml
