@@ -7,6 +7,9 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.mindrot.jbcrypt.BCrypt;
+
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -52,13 +55,16 @@ public class Login extends HttpServlet {
         UtenteDAO utenteDAO = new UtenteDAO();
         UtenteBean utenteBean = utenteDAO.doRetrieveByKey(username);
 
-        if (utenteBean == null || !(utenteBean.getPwd().equals(password)))
+        if (utenteBean == null)
             return -1;
-        else {
-            if (utenteBean.getTipo().equals("admin"))
-                return ADMIN;
-            else
-                return REGISTRATO;
-        }
+
+        boolean valid = BCrypt.checkpw(password, utenteBean.getPwd());
+        if (!valid)
+            return -1;
+
+        if ("admin".equals(utenteBean.getTipo()))
+            return ADMIN;
+        else
+            return REGISTRATO;
     }
 }
