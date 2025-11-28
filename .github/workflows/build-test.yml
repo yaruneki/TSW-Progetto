@@ -1,0 +1,106 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write   # needed for PR comments (Codecov/Test Reporter)
+  checks: write          # needed to publish test results in GitHub Checks
+  pages: write           # needed if you publish Jacoco/Pitest reports to GitHub Pages
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    name: Build and Test with Java 11
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Run tests
+      run: mvn clean test
+
+    # - name: Generate JaCoCo report
+    #   run: mvn jacoco:report
+      
+    - name: Generate test report
+      uses: dorny/test-reporter@v2
+      if: success() || failure()
+      with:
+        name: Maven Test Results
+        path: target/surefire-reports/*.xml
+        reporter: java-junit
+        fail-on-error: false
+
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v4
+    #   if: success() || failure()
+    #   with:
+    #     token: ${{ secrets.CODECOV_TOKEN }}
+    #     file: ./target/site/jacoco/jacoco.xml
+    #     flags: unittests
+    #     name: codecov-umbrella
+    #     fail_ci_if_error: false
+    #
+    # - name: Upload test results to Codecov
+    #   if: ${{ !cancelled() }}
+    #   uses: codecov/test-results-action@v1
+    #   with:
+    #     token: ${{ secrets.CODECOV_TOKEN }}
+    #     file: ./target/surefire-reports/TEST-*.xml
+    #
+    # - name: Run PiTest mutation testing
+    #   run: mvn org.pitest:pitest-maven:mutationCoverage
+    #   continue-on-error: true
+
+    # - name: Prepare reports for GitHub Pages
+    # if: github.ref == 'refs/heads/main' && always()
+    # run: |
+    #   mkdir -p github-pages/PiTest
+    #   mkdir -p github-pages/Jacoco
+    #   if [ -d "target/pit-reports" ]; then
+    #     cp -r target/pit-reports/* github-pages/PiTest/ || echo "No PiTest reports found"
+    #   fi
+    #   if [ -d "target/site/jacoco" ]; then
+    #     cp -r target/site/jacoco/* github-pages/Jacoco/ || echo "No JaCoCo reports found"
+    #   fi
+
+    # - name: Deploy reports to GitHub Pages
+    #   uses: actions/upload-pages-artifact@v3
+    #   if: github.ref == 'refs/heads/main' && always()
+    #   with:
+    #     path: ./github-pages
+
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v4
+      if: github.ref == 'refs/heads/main' && always()
+      id: deployment
+
+    - name: Build application
+      run: mvn package -DskipTests
+
+    - name: Upload WAR artifact
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: SD-Progetto-${{ github.sha }}
+        path: target/SD-Progetto.war
+        retention-days: 30
+
