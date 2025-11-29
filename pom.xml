@@ -171,7 +171,6 @@
                             <excludes>
                                 <!-- packages -->
                                 <exclude>model/populator/**</exclude>
-                                <exclude>model/security/**</exclude>
                                 <!-- classes -->
                                 <exclude>model/acquisto/AcquistoBean.class</exclude>
                                 <exclude>model/maglietta/MagliettaBean.class</exclude>
@@ -179,7 +178,6 @@
                                 <exclude>model/misura/MisuraBean.class</exclude>
                                 <exclude>model/ordine/OrdineBean.class</exclude>
                                 <exclude>model/utente/UtenteBean.class</exclude>
-                                <exclude>model/DBConnection.class</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -196,7 +194,6 @@
                             <excludes>
                                 <!-- packages -->
                                 <exclude>model/populator/**</exclude>
-                                <exclude>model/security/**</exclude>
                                 <!-- classes -->
                                 <exclude>model/acquisto/AcquistoBean.class</exclude>
                                 <exclude>model/maglietta/MagliettaBean.class</exclude>
@@ -204,7 +201,6 @@
                                 <exclude>model/misura/MisuraBean.class</exclude>
                                 <exclude>model/ordine/OrdineBean.class</exclude>
                                 <exclude>model/utente/UtenteBean.class</exclude>
-                                <exclude>model/DBConnection.class</exclude>
                             </excludes>
                             <rules>
                                 <rule>
