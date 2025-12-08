@@ -23,7 +23,7 @@ public class UtentePopulator implements TablePopulator {
 
     @Override
     public void populate() throws Exception {
-        if (!isEmpty("Utente")) {
+        if (!isEmpty()) {
             return;
         }
         List<UtenteBean> users = loadUsers();
@@ -33,8 +33,8 @@ public class UtentePopulator implements TablePopulator {
         }
     }
 
-    private boolean isEmpty(String table) throws Exception {
-        String query = "SELECT COUNT(*) FROM " + table;
+    private boolean isEmpty() throws Exception {
+        String query = "SELECT COUNT(*) FROM Utente";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
              ResultSet resultSet = statement.executeQuery()) {
