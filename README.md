@@ -90,16 +90,18 @@ This prevents accidental credential leaks and improves the security posture of t
 
 ---
 
-### 🧭 **Snyk — Dependency Vulnerability Analysis**
+### 🧭 **Snyk — Comprehensive Vulnerability Analysis**
 
-Snyk analyzes the project's Maven dependencies to identify known vulnerabilities (CVEs).
+Snyk is used to detect security issues across the project's codebase and environment.
 It provides:
 
-* Security scanning of direct and transitive dependencies
-* Detailed vulnerability reports
-* Recommended version upgrades and remediation steps
+* Vulnerability scanning for direct and transitive Maven dependencies
+* SAST checks for insecure coding patterns
+* Container image and base-layer vulnerability analysis
+* Detection of misconfigurations in Docker and IaC files
+* Continuous monitoring for newly disclosed CVEs
 
-This ensures that the project relies on secure and up-to-date third-party libraries.
+This ensures that both the application and its execution environment remain secure and up to date.
 
 ---
 
